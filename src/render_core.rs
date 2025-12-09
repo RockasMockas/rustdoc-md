@@ -51,19 +51,19 @@ pub fn render_item_list<F>(
     let mut all_resolved_items: Vec<ResolvedItemInfo<'_>> = Vec::new();
 
     // --- PASS 1: Collect and Resolve All Items (Direct and Re-exported) ---
-    for &id in item_ids {
-        if let Some(item) = data.index.get(&id) {
+    for id in item_ids {
+        if let Some(item) = data.index.get(id) {
             if let ItemEnum::Use(use_item) = &item.inner {
                 // If the 'use' statement is public, resolve its contents.
                 if let Visibility::Public = item.visibility {
                     if use_item.is_glob {
-                        if let Some(target_module_id) = use_item.id {
-                            if let Some(target_module_item) = data.index.get(&target_module_id) {
+                        if let Some(target_module_id) = &use_item.id {
+                            if let Some(target_module_item) = data.index.get(target_module_id) {
                                 if let ItemEnum::Module(target_module_details) =
                                     &target_module_item.inner
                                 {
-                                    for &glob_item_id in &target_module_details.items {
-                                        if let Some(glob_item) = data.index.get(&glob_item_id) {
+                                    for glob_item_id in &target_module_details.items {
+                                        if let Some(glob_item) = data.index.get(glob_item_id) {
                                             if glob_item.visibility == Visibility::Public {
                                                 let canonical_path = data
                                                     .paths
@@ -85,8 +85,8 @@ pub fn render_item_list<F>(
                         }
                     } else {
                         // Named re-export
-                        if let Some(target_id) = use_item.id {
-                            if let Some(target_item) = data.index.get(&target_id) {
+                        if let Some(target_id) = &use_item.id {
+                            if let Some(target_item) = data.index.get(target_id) {
                                 let canonical_path = data
                                     .paths
                                     .get(&target_item.id)
@@ -298,7 +298,23 @@ pub fn render_item_page<F>(
     if !item.attrs.is_empty() {
         output.push_str("**Attributes:**\n\n");
         for attr in &item.attrs {
-            output.push_str(&format!("- `{}`\n", attr));
+            let attr_str = match attr {
+                Attribute::Plain(s) => s.clone(),
+                Attribute::Structured(map) => {
+                    // Try to find the 'other' key which usually holds the string representation,
+                    // otherwise just dump the whole map.
+                    if let Some(val) = map.get("other") {
+                        if let Some(s) = val.as_str() {
+                            s.to_string()
+                        } else {
+                            val.to_string()
+                        }
+                    } else {
+                        format!("{:?}", map)
+                    }
+                }
+            };
+            output.push_str(&format!("- `{}`\n", attr_str));
         }
         output.push('\n');
     }
@@ -442,8 +458,8 @@ pub fn render_module_items_recursively(
 
     // Now, recursively render the full content of any public submodules.
     if let ItemEnum::Module(module_details) = &module_item.inner {
-        for &item_id in &module_details.items {
-            if let Some(item) = krate.index.get(&item_id) {
+        for item_id in &module_details.items {
+            if let Some(item) = krate.index.get(item_id) {
                 if item.visibility == Visibility::Public
                     && matches!(item.inner, ItemEnum::Module(_))
                 {

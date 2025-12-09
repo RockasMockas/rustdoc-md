@@ -24,7 +24,7 @@ impl<'a> Generator<'a> {
         for id in krate.paths.keys() {
             // get_item_fs_path now relies only on krate.paths (via summary), not krate.index.
             let path = get_item_fs_path(krate, id, output_dir_param);
-            fs_paths.insert(*id, path);
+            fs_paths.insert(id.clone(), path);
         }
         Ok(Self { krate, fs_paths })
     }

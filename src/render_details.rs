@@ -80,8 +80,8 @@ pub fn process_struct_details<F>(
             output.push_str("| Name | Type | Documentation |\n");
             output.push_str("|------|------|---------------|\n");
 
-            for &field_id in fields {
-                if let Some(field_item) = data.index.get(&field_id) {
+            for field_id in fields {
+                if let Some(field_item) = data.index.get(field_id) {
                     if let Some(field_name) = &field_item.name {
                         if let ItemEnum::StructField(field_type) = &field_item.inner {
                             let docs_str = field_item.docs.as_deref().unwrap_or("");
@@ -120,8 +120,8 @@ pub fn process_struct_details<F>(
         let mut all_inherent_assoc_consts = Vec::new();
         let mut all_inherent_assoc_types = Vec::new();
 
-        for &impl_id in &struct_.impls {
-            if let Some(impl_item_ref) = data.index.get(&impl_id) {
+        for impl_id in &struct_.impls {
+            if let Some(impl_item_ref) = data.index.get(impl_id) {
                 if let ItemEnum::Impl(impl_details) = &impl_item_ref.inner {
                     if let Some(trait_ref) = &impl_details.trait_ {
                         // This is a trait implementation (impl Trait for Type)
@@ -129,8 +129,8 @@ pub fn process_struct_details<F>(
                     } else {
                         // This is an inherent implementation (impl Type)
                         // Collect its associated items
-                        for &assoc_item_id in &impl_details.items {
-                            if let Some(assoc_item_ref) = data.index.get(&assoc_item_id) {
+                        for assoc_item_id in &impl_details.items {
+                            if let Some(assoc_item_ref) = data.index.get(assoc_item_id) {
                                 let resolved_assoc_info = ResolvedItemInfo {
                                     original_item: assoc_item_ref,
                                     effective_name: assoc_item_ref.name.clone(),
@@ -248,8 +248,8 @@ pub fn process_enum_details<F>(
     let heading_level = std::cmp::min(level, 6);
     output.push_str(&format!("{} Variants\n\n", "#".repeat(heading_level)));
 
-    for &variant_id in &enum_.variants {
-        if let Some(variant_item) = data.index.get(&variant_id) {
+    for variant_id in &enum_.variants {
+        if let Some(variant_item) = data.index.get(variant_id) {
             if let Some(variant_name) = &variant_item.name {
                 let variant_heading_level = std::cmp::min(heading_level + 1, 6);
                 output.push_str(&format!(
@@ -359,8 +359,8 @@ pub fn process_enum_details<F>(
                                 output.push_str("Fields:\n\n");
                                 output.push_str("| Name | Type | Documentation |\n");
                                 output.push_str("|------|------|---------------|\n");
-                                for &field_id in fields {
-                                    if let Some(field_item) = data.index.get(&field_id) {
+                                for field_id in fields {
+                                    if let Some(field_item) = data.index.get(field_id) {
                                         if let Some(field_name) = &field_item.name {
                                             if let ItemEnum::StructField(field_type) =
                                                 &field_item.inner
@@ -417,14 +417,14 @@ pub fn process_enum_details<F>(
         let mut all_inherent_assoc_consts = Vec::new();
         let mut all_inherent_assoc_types = Vec::new();
 
-        for &impl_id in &enum_.impls {
-            if let Some(impl_item_ref) = data.index.get(&impl_id) {
+        for impl_id in &enum_.impls {
+            if let Some(impl_item_ref) = data.index.get(impl_id) {
                 if let ItemEnum::Impl(impl_details) = &impl_item_ref.inner {
                     if let Some(trait_ref) = &impl_details.trait_ {
                         implemented_trait_paths.push(trait_ref.path.clone());
                     } else {
-                        for &assoc_item_id in &impl_details.items {
-                            if let Some(assoc_item_ref) = data.index.get(&assoc_item_id) {
+                        for assoc_item_id in &impl_details.items {
+                            if let Some(assoc_item_ref) = data.index.get(assoc_item_id) {
                                 let resolved_assoc_info = ResolvedItemInfo {
                                     original_item: assoc_item_ref,
                                     effective_name: assoc_item_ref.name.clone(),
@@ -539,8 +539,8 @@ pub fn process_union_details<F>(
     output.push_str("| Name | Type | Documentation |\n");
     output.push_str("|------|------|---------------|\n");
 
-    for &field_id in &union_.fields {
-        if let Some(field_item) = data.index.get(&field_id) {
+    for field_id in &union_.fields {
+        if let Some(field_item) = data.index.get(field_id) {
             if let Some(field_name) = &field_item.name {
                 if let ItemEnum::StructField(field_type) = &field_item.inner {
                     let docs_str = field_item.docs.as_deref().unwrap_or("");
@@ -571,14 +571,14 @@ pub fn process_union_details<F>(
         let mut all_inherent_assoc_consts = Vec::new();
         let mut all_inherent_assoc_types = Vec::new();
 
-        for &impl_id in &union_.impls {
-            if let Some(impl_item_ref) = data.index.get(&impl_id) {
+        for impl_id in &union_.impls {
+            if let Some(impl_item_ref) = data.index.get(impl_id) {
                 if let ItemEnum::Impl(impl_details) = &impl_item_ref.inner {
                     if let Some(trait_ref) = &impl_details.trait_ {
                         implemented_trait_paths.push(trait_ref.path.clone());
                     } else {
-                        for &assoc_item_id in &impl_details.items {
-                            if let Some(assoc_item_ref) = data.index.get(&assoc_item_id) {
+                        for assoc_item_id in &impl_details.items {
+                            if let Some(assoc_item_ref) = data.index.get(assoc_item_id) {
                                 let resolved_assoc_info = ResolvedItemInfo {
                                     original_item: assoc_item_ref,
                                     effective_name: assoc_item_ref.name.clone(),
@@ -704,8 +704,8 @@ pub fn process_trait_details<F>(
     let mut required_items = Vec::new();
     let mut provided_items = Vec::new();
 
-    for &item_id in &trait_.items {
-        if let Some(item) = data.index.get(&item_id) {
+    for item_id in &trait_.items {
+        if let Some(item) = data.index.get(item_id) {
             match &item.inner {
                 ItemEnum::Function(f) => {
                     if f.has_body {
@@ -758,8 +758,8 @@ pub fn process_trait_details<F>(
     if !trait_.implementations.is_empty() {
         output.push_str(&format!("{} Implementors\n\n", "#".repeat(heading_level)));
         output.push_str("This trait is implemented for the following types:\n\n");
-        for &impl_id in &trait_.implementations {
-            if let Some(impl_item) = data.index.get(&impl_id) {
+        for impl_id in &trait_.implementations {
+            if let Some(impl_item) = data.index.get(impl_id) {
                 if let ItemEnum::Impl(impl_details) = &impl_item.inner {
                     output.push_str(&format!("- `{}`", format_type(&impl_details.for_, data)));
                     if !impl_details.generics.params.is_empty() {
@@ -795,8 +795,8 @@ pub fn process_impl_details<F>(
         let mut assoc_consts = Vec::new();
         let mut methods = Vec::new();
 
-        for &item_id in &impl_.items {
-            if let Some(item) = data.index.get(&item_id) {
+        for item_id in &impl_.items {
+            if let Some(item) = data.index.get(item_id) {
                 match &item.inner {
                     ItemEnum::AssocType { .. } => assoc_types.push(item_id),
                     ItemEnum::AssocConst { .. } => assoc_consts.push(item_id),
@@ -818,7 +818,7 @@ pub fn process_impl_details<F>(
                 "#".repeat(sub_heading_level)
             ));
             for item_id in assoc_types {
-                if let Some(assoc_item_ref) = data.index.get(&item_id) {
+                if let Some(assoc_item_ref) = data.index.get(item_id) {
                     let resolved_assoc_info = ResolvedItemInfo {
                         original_item: assoc_item_ref,
                         effective_name: assoc_item_ref.name.clone(),
@@ -841,7 +841,7 @@ pub fn process_impl_details<F>(
                 "#".repeat(sub_heading_level)
             ));
             for item_id in assoc_consts {
-                if let Some(assoc_item_ref) = data.index.get(&item_id) {
+                if let Some(assoc_item_ref) = data.index.get(item_id) {
                     let resolved_assoc_info = ResolvedItemInfo {
                         original_item: assoc_item_ref,
                         effective_name: assoc_item_ref.name.clone(),
@@ -861,7 +861,7 @@ pub fn process_impl_details<F>(
         if !methods.is_empty() {
             output.push_str(&format!("{} Methods\n\n", "#".repeat(sub_heading_level)));
             for item_id in methods {
-                if let Some(assoc_item_ref) = data.index.get(&item_id) {
+                if let Some(assoc_item_ref) = data.index.get(item_id) {
                     let resolved_assoc_info = ResolvedItemInfo {
                         original_item: assoc_item_ref,
                         effective_name: assoc_item_ref.name.clone(),
@@ -904,7 +904,7 @@ pub fn process_impl_details<F>(
 // Helper function to render groups of associated items for traits
 fn render_associated_item_group<F>(
     output: &mut String,
-    item_ids: &[Id],
+    item_ids: &[&Id], // Changed to match vector of references
     data: &ParsedCrateDoc,
     level: usize,
     link_resolver: F,
@@ -916,7 +916,7 @@ fn render_associated_item_group<F>(
     let mut functions = Vec::new(); // Methods or associated functions
 
     for &item_id in item_ids {
-        if let Some(item) = data.index.get(&item_id) {
+        if let Some(item) = data.index.get(item_id) {
             match &item.inner {
                 ItemEnum::AssocType { .. } => assoc_types.push(item_id),
                 ItemEnum::AssocConst { .. } => assoc_consts.push(item_id),
@@ -934,7 +934,7 @@ fn render_associated_item_group<F>(
             "#".repeat(sub_heading_level)
         ));
         for item_id in assoc_types {
-            if let Some(item_ref) = data.index.get(&item_id) {
+            if let Some(item_ref) = data.index.get(item_id) {
                 let resolved_info = ResolvedItemInfo {
                     original_item: item_ref,
                     effective_name: item_ref.name.clone(),
@@ -957,7 +957,7 @@ fn render_associated_item_group<F>(
             "#".repeat(sub_heading_level)
         ));
         for item_id in assoc_consts {
-            if let Some(item_ref) = data.index.get(&item_id) {
+            if let Some(item_ref) = data.index.get(item_id) {
                 let resolved_info = ResolvedItemInfo {
                     original_item: item_ref,
                     effective_name: item_ref.name.clone(),
@@ -980,7 +980,7 @@ fn render_associated_item_group<F>(
             "#".repeat(sub_heading_level)
         ));
         for item_id in functions {
-            if let Some(item_ref) = data.index.get(&item_id) {
+            if let Some(item_ref) = data.index.get(item_id) {
                 let resolved_info = ResolvedItemInfo {
                     original_item: item_ref,
                     effective_name: item_ref.name.clone(),

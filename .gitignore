@@ -1,1 +1,6 @@
 /target
+
+.lledit.buffer.inputs/
+.lledit.previous_session
+.lledit.config.yml
+crate-docs/

@@ -59,8 +59,8 @@ pub fn format_item_signature(output: &mut String, item: &Item, data: &ParsedCrat
                         has_stripped_fields,
                     } => {
                         output.push_str(" {\n");
-                        for &field_id in fields {
-                            if let Some(field_item) = data.index.get(&field_id) {
+                        for field_id in fields {
+                            if let Some(field_item) = data.index.get(field_id) {
                                 if let Some(field_name) = &field_item.name {
                                     if let ItemEnum::StructField(field_type) = &field_item.inner {
                                         // Field visibility
@@ -95,8 +95,8 @@ pub fn format_item_signature(output: &mut String, item: &Item, data: &ParsedCrat
                 format_generics(output, &enum_.generics, data);
                 output.push_str(" {\n");
 
-                for &variant_id in &enum_.variants {
-                    if let Some(variant_item) = data.index.get(&variant_id) {
+                for variant_id in &enum_.variants {
+                    if let Some(variant_item) = data.index.get(variant_id) {
                         if let Some(variant_name) = &variant_item.name {
                             output.push_str(&format!("    {}", variant_name));
 
@@ -134,8 +134,8 @@ pub fn format_item_signature(output: &mut String, item: &Item, data: &ParsedCrat
                                         has_stripped_fields,
                                     } => {
                                         output.push_str(" {\n");
-                                        for &field_id in fields {
-                                            if let Some(field_item) = data.index.get(&field_id) {
+                                        for field_id in fields {
+                                            if let Some(field_item) = data.index.get(field_id) {
                                                 if let Some(field_name) = &field_item.name {
                                                     if let ItemEnum::StructField(field_type) =
                                                         &field_item.inner
@@ -179,8 +179,8 @@ pub fn format_item_signature(output: &mut String, item: &Item, data: &ParsedCrat
                 format_generics(output, &union_.generics, data);
                 output.push_str(" {\n");
 
-                for &field_id in &union_.fields {
-                    if let Some(field_item) = data.index.get(&field_id) {
+                for field_id in &union_.fields {
+                    if let Some(field_item) = data.index.get(field_id) {
                         if let Some(field_name) = &field_item.name {
                             if let ItemEnum::StructField(field_type) = &field_item.inner {
                                 match &field_item.visibility {
@@ -550,8 +550,8 @@ pub fn format_item_signature(output: &mut String, item: &Item, data: &ParsedCrat
                         has_stripped_fields,
                     } => {
                         output.push_str(" {\n");
-                        for &field_id in fields {
-                            if let Some(field_item) = data.index.get(&field_id) {
+                        for field_id in fields {
+                            if let Some(field_item) = data.index.get(field_id) {
                                 if let Some(field_name) = &field_item.name {
                                     if let ItemEnum::StructField(field_type) = &field_item.inner {
                                         output.push_str(&format!(
@@ -1143,10 +1143,12 @@ pub fn format_type(ty: &Type, data: &ParsedCrateDoc) -> String {
 
             output.push_str(&format!(">::{}", name));
 
-            let mut args_str = String::new();
-            format_generic_args(&mut args_str, args, data);
-            if args_str != "<>" && !args_str.is_empty() {
-                output.push_str(&args_str);
+            if let Some(args_val) = args {
+                let mut args_str = String::new();
+                format_generic_args(&mut args_str, args_val, data);
+                if args_str != "<>" && !args_str.is_empty() {
+                    output.push_str(&args_str);
+                }
             }
         }
     }

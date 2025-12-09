@@ -15,21 +15,19 @@
 //! [1]: https://rust-lang.zulipchat.com/#narrow/channel/266220-t-rustdoc/topic/rustc-hash.20and.20performance.20of.20rustdoc-types/near/474855731
 //! [2]: https://crates.io/crates/rustc-hash
 
-use std::collections::HashMap; // Ensure this is the one used
+use std::collections::HashMap;
 use std::path::PathBuf;
 
-// #[cfg(feature = "rustc-hash")] // This attribute is removed
-// use rustc_hash::FxHashMap as HashMap; // This import is removed
 use serde::{Deserialize, Serialize};
 
-pub type FxHashMap<K, V> = HashMap<K, V>; // re-export for use in src/librustdoc
+pub type FxHashMap<K, V> = HashMap<K, V>;
 
 /// The version of JSON output that this crate represents.
 ///
 /// This integer is incremented with every breaking change to the API,
 /// and is returned along with the JSON blob as [`ParsedCrateDoc::format_version`].
 /// Consuming code should assert that this value matches the format version(s) that it supports.
-pub const FORMAT_VERSION: u32 = 43;
+pub const FORMAT_VERSION: u32 = 56;
 
 /// The root of the emitted JSON blob.
 ///
@@ -41,6 +39,7 @@ pub struct ParsedCrateDoc {
     /// The id of the root [`Module`] item of the local crate.
     pub root: Id,
     /// The version string given to `--crate-version`, if any.
+    #[serde(default)]
     pub crate_version: Option<String>,
     /// Whether or not the output includes private items.
     pub includes_private: bool,
@@ -60,15 +59,9 @@ pub struct ParsedCrateDoc {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ExternalCrate {
     /// The name of the crate.
-    ///
-    /// Note: This is the [*crate* name][crate-name], which may not be the same as the
-    /// [*package* name][package-name]. For example, for <https://crates.io/crates/regex-syntax>,
-    /// this field will be `regex_syntax` (which uses an `_`, not a `-`).
-    ///
-    /// [crate-name]: https://doc.rust-lang.org/stable/cargo/reference/cargo-targets.html#the-name-field
-    /// [package-name]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-name-field
     pub name: String,
     /// The root URL at which the crate's documentation lives.
+    #[serde(default)]
     pub html_root_url: Option<String>,
 }
 
@@ -95,6 +88,23 @@ pub struct ItemSummary {
     pub kind: ItemKind,
 }
 
+/// An attribute on an item.
+///
+/// Can be a simple string or a structured item.
+///
+/// We use `serde_json::Value` for structured attributes to be resilient against
+/// changes in the `AttributeEnum` or new attribute types.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Attribute {
+    /// A plain string attribute, e.g. `"automatically_derived"`.
+    /// This must be listed first for `untagged` to correctly prefer string over object/map
+    /// if `Value` could match both (though here `Structured` is Map, so strict separation exists).
+    Plain(String),
+    /// A structured attribute, e.g. `{"other": "#[attr = Inline(Hint)]"}`.
+    Structured(HashMap<String, serde_json::Value>),
+}
+
 /// Anything that can hold documentation - modules, structs, enums, functions, traits, etc.
 ///
 /// The `Item` data type holds fields that can apply to any of these,
@@ -107,23 +117,29 @@ pub struct Item {
     /// this item came from.
     pub crate_id: u32,
     /// Some items such as impls don't have names.
+    #[serde(default)]
     pub name: Option<String>,
     /// The source location of this item (absent if it came from a macro expansion or inline
     /// assembly).
+    #[serde(default)]
     pub span: Option<Span>,
     /// By default all documented items are public, but you can tell rustdoc to output private items
     /// so this field is needed to differentiate.
     pub visibility: Visibility,
     /// The full markdown docstring of this item. Absent if there is no documentation at all,
     /// Some("") if there is some documentation but it is empty (EG `#[doc = ""]`).
+    #[serde(default)]
     pub docs: Option<String>,
     /// This mapping resolves [intra-doc links](https://github.com/rust-lang/rfcs/blob/master/text/1946-intra-rustdoc-links.md) from the docstring to their IDs
+    #[serde(default)]
     pub links: HashMap<String, Id>,
     /// Stringified versions of parsed attributes on this item.
     /// Essentially debug printed (e.g. `#[inline]` becomes something similar to `#[attr="Inline(Hint)"]`).
     /// Equivalent to the hir pretty-printing of attributes.
-    pub attrs: Vec<String>,
+    #[serde(default)]
+    pub attrs: Vec<Attribute>,
     /// Information about the item’s deprecation, if present.
+    #[serde(default)]
     pub deprecation: Option<Deprecation>,
     /// The type-specific fields describing this item.
     pub inner: ItemEnum,
@@ -144,8 +160,10 @@ pub struct Span {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Deprecation {
     /// Usually a version number when this [`Item`] first became deprecated.
+    #[serde(default)]
     pub since: Option<String>,
     /// The reason for deprecation and/or what alternatives to use.
+    #[serde(default)]
     pub note: Option<String>,
 }
 
@@ -166,8 +184,6 @@ pub enum Visibility {
         parent: Id,
         /// The path with which [`parent`] was referenced
         /// (like `super::super` or `crate::foo::bar`).
-        ///
-        /// [`parent`]: Visibility::Restricted::parent
         path: String,
     },
 }
@@ -184,6 +200,7 @@ pub struct DynTrait {
     ///             |
     ///             this part
     /// ```
+    #[serde(default)]
     pub lifetime: Option<String>,
 }
 
@@ -198,6 +215,7 @@ pub struct PolyTrait {
     /// dyn for<'a> Fn() -> &'a i32"
     ///     ^^^^^^^
     /// ```
+    #[serde(default)]
     pub generic_params: Vec<GenericParamDef>,
 }
 
@@ -226,6 +244,7 @@ pub enum GenericArgs {
         /// The input types, enclosed in parentheses.
         inputs: Vec<Type>,
         /// The output type provided after the `->`, if present.
+        #[serde(default)]
         output: Option<Type>,
     },
     /// `T::method(..)`
@@ -272,6 +291,7 @@ pub struct Constant {
     pub expr: String,
     /// The value of the evaluated expression for this constant, which is only computed for numeric
     /// types.
+    #[serde(default)]
     pub value: Option<String>,
     /// Whether this constant is a bool, numeric, string, or char literal.
     pub is_literal: bool,
@@ -323,9 +343,58 @@ pub enum AssocItemConstraintKind {
 /// Rustdoc makes no guarantees about the inner value of Id's. Applications
 /// should treat them as opaque keys to lookup items, and avoid attempting
 /// to parse them, or otherwise depend on any implementation details.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-// FIXME(aDotInTheVoid): Consider making this non-public in rustdoc-types.
-pub struct Id(pub u32);
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
+pub struct Id(pub String);
+
+impl<'de> Deserialize<'de> for Id {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::{self, Visitor};
+        use std::fmt;
+
+        struct IdVisitor;
+
+        impl<'de> Visitor<'de> for IdVisitor {
+            type Value = Id;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string or integer representing an Id")
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Id(value.to_string()))
+            }
+
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Id(value.to_string()))
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Id(value.to_string()))
+            }
+
+            fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Id(value))
+            }
+        }
+
+        deserializer.deserialize_any(IdVisitor)
+    }
+}
 
 /// The fundamental kind of an item. Unlike [`ItemEnum`], this does not carry any additional info.
 ///
@@ -410,6 +479,7 @@ pub enum ItemEnum {
         /// The name of the imported crate.
         name: String,
         /// If the crate is renamed, this is its name in the crate.
+        #[serde(default)]
         rename: Option<String>,
     },
     /// An import of 1 or more items into scope, using the `use` keyword.
@@ -486,6 +556,7 @@ pub enum ItemEnum {
         /// const X: usize = 640 * 1024;
         /// //               ^^^^^^^^^^
         /// ```
+        #[serde(default)]
         value: Option<String>,
     },
     /// An associated type of a trait or a type.
@@ -510,6 +581,7 @@ pub enum ItemEnum {
         /// //       ^^^^^
         /// ```
         #[serde(rename = "type")]
+        #[serde(default)]
         type_: Option<Type>,
     },
 }
@@ -617,6 +689,7 @@ pub struct Variant {
     /// Whether the variant is plain, a tuple-like, or struct-like. Contains the fields.
     pub kind: VariantKind,
     /// The discriminant, if explicitly specified.
+    #[serde(default)]
     pub discriminant: Option<Discriminant>,
 }
 
@@ -795,6 +868,7 @@ pub enum GenericParamDefKind {
         /// trait PartialEq<Rhs = Self> {}
         /// //                    ^^^^
         /// ```
+        #[serde(default)]
         default: Option<Type>,
         /// This is normally `false`, which means that this generic parameter is
         /// declared in the Rust source text.
@@ -829,6 +903,7 @@ pub enum GenericParamDefKind {
         type_: Type,
         /// The stringified expression for the default value, if provided. It's not guaranteed that
         /// it'll match the actual source code for the default value.
+        #[serde(default)]
         default: Option<String>,
     },
 }
@@ -863,6 +938,7 @@ pub enum WherePredicate {
         /// fn f<T>(x: T) where for<'a> &'a T: Iterator {}
         /// //                  ^^^^^^^
         /// ```
+        #[serde(default)]
         generic_params: Vec<GenericParamDef>,
     },
 
@@ -899,6 +975,7 @@ pub enum GenericBound {
         ///          |
         ///          this part
         /// ```
+        #[serde(default)]
         generic_params: Vec<GenericParamDef>,
         /// The context for which a trait is supposed to be used, e.g. `const
         modifier: TraitBoundModifier,
@@ -925,6 +1002,7 @@ pub enum TraitBoundModifier {
     Maybe,
     /// Indicates that the trait bound must be applicable in both a run-time and a compile-time
     /// context.
+    #[serde(alias = "const")]
     MaybeConst,
 }
 
@@ -994,7 +1072,7 @@ pub enum Type {
         type_: Box<Type>,
         /// The stringified expression that is the length of the array.
         ///
-        /// Keep in mind that it's not guaranteed to match the actual source code of the expression.
+        /// Keep in mind that it's not guaranteed that it'll match the actual source code of the expression.
         len: String,
     },
     /// A pattern type, e.g. `u32 is 1..`
@@ -1005,6 +1083,7 @@ pub enum Type {
         #[serde(rename = "type")]
         type_: Box<Type>,
         #[doc(hidden)]
+        #[serde(default)]
         __pat_unstable_do_not_use: String,
     },
     /// An opaque type that satisfies a set of bounds, `impl TraitA + TraitB + ...`
@@ -1022,6 +1101,7 @@ pub enum Type {
     /// `&'a mut String`, `&str`, etc.
     BorrowedRef {
         /// The name of the lifetime of the reference, if provided.
+        #[serde(default)]
         lifetime: Option<String>,
         /// This is `true` for `&mut i32` and `false` for `&i32`
         is_mutable: bool,
@@ -1045,7 +1125,8 @@ pub enum Type {
         /// <core::slice::IterMut<'static, u32> as BetterIterator>::Item<'static>
         /// //                                                          ^^^^^^^^^
         /// ```
-        args: Box<GenericArgs>,
+        #[serde(default)]
+        args: Option<Box<GenericArgs>>, // Changed to Option to handle null
         /// The type with which this type is associated.
         ///
         /// ```ignore (incomplete expression)
@@ -1055,6 +1136,7 @@ pub enum Type {
         self_type: Box<Type>,
         /// `None` iff this is an *inherent* associated type.
         #[serde(rename = "trait")]
+        #[serde(default)]
         trait_: Option<Path>,
     },
 }
@@ -1084,6 +1166,7 @@ pub struct Path {
     /// std::borrow::Cow<'static, str>
     /// //              ^^^^^^^^^^^^^^
     /// ```
+    #[serde(default)]
     pub args: Option<Box<GenericArgs>>,
 }
 
@@ -1098,6 +1181,7 @@ pub struct FunctionPointer {
     ///    for<'c> fn(val: &'c i32) -> i32
     /// // ^^^^^^^
     /// ```
+    #[serde(default)]
     pub generic_params: Vec<GenericParamDef>,
     /// The core properties of the function, such as the ABI it conforms to, whether it's unsafe, etc.
     pub header: FunctionHeader,
@@ -1112,6 +1196,7 @@ pub struct FunctionSignature {
     /// them may be patterns.
     pub inputs: Vec<(String, Type)>,
     /// The output type, if specified.
+    #[serde(default)]
     pub output: Option<Type>,
     /// Whether the function accepts an arbitrary amount of trailing arguments the C way.
     ///
@@ -1132,6 +1217,7 @@ pub struct Trait {
     /// Whether the trait is [dyn compatible](https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility)[^1].
     ///
     /// [^1]: Formerly known as "object safe".
+    #[serde(alias = "is_object_safe")]
     pub is_dyn_compatible: bool,
     /// Associated [`Item`]s that can/must be implemented by the `impl` blocks.
     pub items: Vec<Id>,
@@ -1177,6 +1263,7 @@ pub struct Impl {
     /// The trait being implemented or `None` if the impl is inherent, which means
     /// `impl Struct {}` as opposed to `impl Trait for Struct {}`.
     #[serde(rename = "trait")]
+    #[serde(default)]
     pub trait_: Option<Path>,
     /// The type that the impl block is for.
     #[serde(rename = "for")]
@@ -1189,6 +1276,7 @@ pub struct Impl {
     /// (for autotraits, e.g. `Send` or `Sync`).
     pub is_synthetic: bool,
     // FIXME: document this
+    #[serde(default)]
     pub blanket_impl: Option<Type>,
 }
 
@@ -1205,6 +1293,7 @@ pub struct Use {
     /// ```rust
     /// pub use i32 as my_i32;
     /// ```
+    #[serde(default)]
     pub id: Option<Id>,
     /// Whether this statement is a wildcard `use`, e.g. `use source::*;`
     pub is_glob: bool,

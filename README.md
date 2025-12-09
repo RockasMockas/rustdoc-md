@@ -35,7 +35,7 @@ This will generate JSON documentation in your `target/doc` directory.
 ### Step 2: Convert to Markdown using CLI
 
 ```bash
-rustdoc-md --path target/doc/your_crate.json --output api_docs.md
+rustdoc-md --input-json target/doc/your_crate.json --output api_docs.md
 ```
 
 ### API Usage

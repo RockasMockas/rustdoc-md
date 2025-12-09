@@ -14,6 +14,14 @@ impl ParsedCrateDoc {
         let file = fs::File::open(path)?;
         let reader = io::BufReader::new(file);
         let krate: ParsedCrateDoc = serde_json::from_reader(reader)?;
+        
+        if krate.format_version != FORMAT_VERSION {
+            eprintln!(
+                "Warning: The JSON data has format version {}, but this tool is built for version {}. Output might be incorrect.",
+                krate.format_version, FORMAT_VERSION
+            );
+        }
+
         Ok(krate)
     }
 
@@ -33,7 +41,7 @@ impl ParsedCrateDoc {
         output.push_str(&format!("**Format Version:** {}\n\n", self.format_version));
 
         // Process the root module to start
-        let root_id = self.root;
+        let root_id = self.root.clone(); // Id is now String, so clone it
         if let Some(root_item) = self.index.get(&root_id) {
             crate::render_core::render_module_items_recursively(&mut output, root_item, self, 1);
         }
