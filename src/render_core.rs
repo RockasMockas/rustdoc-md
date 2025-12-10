@@ -300,7 +300,18 @@ pub fn render_item_page<F>(
         for attr in &item.attrs {
             let attr_str = match attr {
                 Attribute::Plain(s) => s.clone(),
-                Attribute::Structured(AttributeEnum::Other(s)) => s.clone(),
+                Attribute::Structured(map) => {
+                    // Try to extract "other" if present, otherwise dump the map
+                    if let Some(val) = map.get("other") {
+                        if let Some(s) = val.as_str() {
+                            s.to_string()
+                        } else {
+                            val.to_string()
+                        }
+                    } else {
+                        format!("{:?}", map)
+                    }
+                }
             };
             output.push_str(&format!("- `{}`\n", attr_str));
         }

@@ -91,21 +91,17 @@ pub struct ItemSummary {
 /// An attribute on an item.
 ///
 /// Can be a simple string or a structured item.
+///
+/// We use `serde_json::Value` for structured attributes to be resilient against
+/// any structure rustdoc outputs (e.g. `{"other": ...}`, `{"must_use": ...}`).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Attribute {
-    /// A structured attribute, e.g. `{"other": "#[attr = Inline(Hint)]"}`.
-    Structured(AttributeEnum),
     /// A plain string attribute, e.g. `"automatically_derived"`.
+    /// This must be listed first for `untagged` to correctly prefer string over object/map.
     Plain(String),
-}
-
-/// The different kinds of structured attributes.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum AttributeEnum {
-    /// An attribute that doesn't fit into other categories or is in a raw string format.
-    Other(String),
+    /// A structured attribute, e.g. `{"other": "#[attr = Inline(Hint)]"}`.
+    Structured(HashMap<String, serde_json::Value>),
 }
 
 /// Anything that can hold documentation - modules, structs, enums, functions, traits, etc.
@@ -313,7 +309,7 @@ pub struct AssocItemConstraint {
     pub name: String,
     /// Arguments provided to the associated type/constant.
     #[serde(default)]
-    pub args: Option<GenericArgs>, // Changed to Option to handle null
+    pub args: Option<GenericArgs>, // Changed to Option to handle null/missing
     /// The kind of bound applied to the associated type/constant.
     pub binding: AssocItemConstraintKind,
 }
