@@ -1,10 +1,10 @@
 [package]
 name = "rustdoc-md"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Convert Rust documentation JSON into clean, organized Markdown files"
 readme = "README.md"
-repository = "https://github.com/tqwewe/rustdoc-md"
+repository = "https://github.com/RockasMockas/rustdoc-md"
 license = "MIT OR Apache-2.0"
 keywords = ["rustdoc", "markdown", "documentation", "converter", "api"]
 categories = ["development-tools", "text-processing", "command-line-utilities"]

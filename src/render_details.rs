@@ -1,4 +1,6 @@
-use crate::render_core::{RenderOptions, ResolvedItemInfo, render_docs_with_links, render_item_page};
+use crate::render_core::{
+    RenderOptions, ResolvedItemInfo, render_docs_with_links, render_item_page,
+};
 use crate::render_signatures::{format_generics, format_type};
 use crate::rustdoc_json_types::Id;
 use crate::rustdoc_json_types::*; // Ensure Id is in scope for Fn(&Id)
@@ -377,7 +379,7 @@ pub fn process_union_details<F>(
     F: Fn(&Id) -> String + Copy,
 {
     let heading_level = std::cmp::min(level, 6);
-    
+
     // Fields sub-section removed.
 
     if !union_.impls.is_empty() {
@@ -553,24 +555,12 @@ pub fn process_trait_details<F>(
 
     if !required_items.is_empty() {
         output.push_str(&format!("{} Required Items\n\n", "#".repeat(heading_level)));
-        render_associated_item_group(
-            output,
-            &required_items,
-            data,
-            level + 1,
-            link_resolver,
-        );
+        render_associated_item_group(output, &required_items, data, level + 1, link_resolver);
     }
 
     if !provided_items.is_empty() {
         output.push_str(&format!("{} Provided Items\n\n", "#".repeat(heading_level)));
-        render_associated_item_group(
-            output,
-            &provided_items,
-            data,
-            level + 1,
-            link_resolver,
-        );
+        render_associated_item_group(output, &provided_items, data, level + 1, link_resolver);
     }
 
     if !trait_.implementations.is_empty() {

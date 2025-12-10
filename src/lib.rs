@@ -14,7 +14,7 @@ impl ParsedCrateDoc {
         let file = fs::File::open(path)?;
         let reader = io::BufReader::new(file);
         let krate: ParsedCrateDoc = serde_json::from_reader(reader)?;
-        
+
         if krate.format_version != FORMAT_VERSION {
             eprintln!(
                 "Warning: The JSON data has format version {}, but this tool is built for version {}. Output might be incorrect.",
@@ -52,18 +52,33 @@ impl ParsedCrateDoc {
     /// Generates a single Markdown file documenting the entire crate.
     ///
     /// This function creates parent directories for `output_file` if they don't exist.
-    pub fn to_single_file(&self, output_file: &Path) -> eyre::Result<()> {
-        if let Some(parent_dir) = output_file.parent() {
+    pub fn to_single_file(&self, output_dir: &Path, file_name: Option<&str>) -> eyre::Result<()> {
+        // Determine the final output path.
+        let output_path = if let Some(name) = file_name {
+            let mut p = output_dir.to_path_buf();
+            p.push(name);
+            p
+        } else {
+            // No custom name supplied; treat `output_dir` as the full file path (original behavior).
+            output_dir.to_path_buf()
+        };
+
+        if let Some(parent_dir) = output_path.parent() {
             fs::create_dir_all(parent_dir)?;
         }
         let md = self.to_string();
-        fs::write(output_file, md)?;
+        fs::write(&output_path, md)?;
         Ok(())
     }
 
     /// Generates a hierarchical directory structure of Markdown files.
-    pub fn to_multi_file(&self, output_dir: &Path) -> eyre::Result<()> {
-        multi_file::generate(self, output_dir)
+    pub fn to_multi_file(&self, output_dir: &Path, folder_name: Option<&str>) -> eyre::Result<()> {
+        let final_dir = if let Some(name) = folder_name {
+            output_dir.join(name)
+        } else {
+            output_dir.to_path_buf()
+        };
+        multi_file::generate(self, &final_dir)
     }
 }
 
@@ -137,7 +152,7 @@ pub fn generate_markdown_for_all_json_in_dir(
                         crate_output_dir.display()
                     );
 
-                    if let Err(e) = krate.to_multi_file(&crate_output_dir) {
+                    if let Err(e) = krate.to_multi_file(&crate_output_dir, None) {
                         eprintln!(
                             "Warning: Failed to generate Markdown for '{}': {}",
                             path.display(),
