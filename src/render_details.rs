@@ -35,84 +35,7 @@ pub fn process_struct_details<F>(
     F: Fn(&Id) -> String + Copy,
 {
     let heading_level = std::cmp::min(level, 6);
-    match &struct_.kind {
-        StructKind::Unit => {}
-        StructKind::Tuple(fields) => {
-            output.push_str(&format!("{} Fields\n\n", "#".repeat(heading_level)));
-            output.push_str("| Index | Type | Documentation |\n");
-            output.push_str("|-------|------|---------------|\n");
-
-            for (i, field_opt) in fields.iter().enumerate() {
-                if let Some(field_id) = field_opt {
-                    if let Some(field_item) = data.index.get(field_id) {
-                        if let ItemEnum::StructField(field_type) = &field_item.inner {
-                            let docs_str = field_item.docs.as_deref().unwrap_or("");
-                            let rendered_docs = if docs_str.is_empty() {
-                                "".to_string()
-                            } else {
-                                render_docs_with_links(
-                                    docs_str,
-                                    &field_item.links,
-                                    data,
-                                    link_resolver,
-                                )
-                                .replace("\n", "<br>")
-                            };
-                            output.push_str(&format!(
-                                "| {} | `{}` | {} |\n",
-                                i,
-                                format_type(field_type, data),
-                                rendered_docs
-                            ));
-                        }
-                    }
-                } else {
-                    output.push_str(&format!("| {} | `private` | *Private field* |\n", i));
-                }
-            }
-            output.push('\n');
-        }
-        StructKind::Plain {
-            fields,
-            has_stripped_fields,
-        } => {
-            output.push_str(&format!("{} Fields\n\n", "#".repeat(heading_level)));
-            output.push_str("| Name | Type | Documentation |\n");
-            output.push_str("|------|------|---------------|\n");
-
-            for field_id in fields {
-                if let Some(field_item) = data.index.get(field_id) {
-                    if let Some(field_name) = &field_item.name {
-                        if let ItemEnum::StructField(field_type) = &field_item.inner {
-                            let docs_str = field_item.docs.as_deref().unwrap_or("");
-                            let rendered_docs = if docs_str.is_empty() {
-                                "".to_string()
-                            } else {
-                                render_docs_with_links(
-                                    docs_str,
-                                    &field_item.links,
-                                    data,
-                                    link_resolver,
-                                )
-                                .replace("\n", "<br>")
-                            };
-                            output.push_str(&format!(
-                                "| `{}` | `{}` | {} |\n",
-                                field_name,
-                                format_type(field_type, data),
-                                rendered_docs
-                            ));
-                        }
-                    }
-                }
-            }
-
-            if *has_stripped_fields {
-                output.push_str("| *private fields* | ... | *Some fields have been omitted* |\n");
-            }
-            output.push('\n');
-        }
-    }
+    // Fields sub-section removed as per user request to avoid duplication with signature block.
 
     if !struct_.impls.is_empty() {
         let mut implemented_trait_paths = Vec::new();
@@ -310,95 +233,8 @@ pub fn process_enum_details<F>(
                     output.push_str(&variant_sig);
                     output.push_str("\n```\n\n");
 
-                    // Detailed fields for Tuple and Struct variants
-                    match &variant_details.kind {
-                        VariantKind::Tuple(fields) => {
-                            if !fields.is_empty() && fields.iter().any(|f| f.is_some()) {
-                                output.push_str("Fields:\n\n");
-                                output.push_str("| Index | Type | Documentation |\n");
-                                output.push_str("|-------|------|---------------|\n");
-                                for (i, field_opt) in fields.iter().enumerate() {
-                                    if let Some(field_id) = field_opt {
-                                        if let Some(field_item) = data.index.get(field_id) {
-                                            if let ItemEnum::StructField(field_type) =
-                                                &field_item.inner
-                                            {
-                                                let docs_str =
-                                                    field_item.docs.as_deref().unwrap_or("");
-                                                let rendered_docs = if docs_str.is_empty() {
-                                                    "".to_string()
-                                                } else {
-                                                    render_docs_with_links(
-                                                        docs_str,
-                                                        &field_item.links,
-                                                        data,
-                                                        link_resolver,
-                                                    )
-                                                    .replace("\n", "<br>")
-                                                };
-                                                output.push_str(&format!(
-                                                    "| {} | `{}` | {} |\n",
-                                                    i,
-                                                    format_type(field_type, data),
-                                                    rendered_docs
-                                                ));
-                                            }
-                                        }
-                                    } else {
-                                        output.push_str(&format!(
-                                            "| {} | `private` | *Private field* |\n",
-                                            i
-                                        ));
-                                    }
-                                }
-                                output.push('\n');
-                            }
-                        }
-                        VariantKind::Struct {
-                            fields,
-                            has_stripped_fields,
-                        } => {
-                            if !fields.is_empty() || *has_stripped_fields {
-                                output.push_str("Fields:\n\n");
-                                output.push_str("| Name | Type | Documentation |\n");
-                                output.push_str("|------|------|---------------|\n");
-                                for field_id in fields {
-                                    if let Some(field_item) = data.index.get(field_id) {
-                                        if let Some(field_name) = &field_item.name {
-                                            if let ItemEnum::StructField(field_type) =
-                                                &field_item.inner
-                                            {
-                                                let docs_str =
-                                                    field_item.docs.as_deref().unwrap_or("");
-                                                let rendered_docs = if docs_str.is_empty() {
-                                                    "".to_string()
-                                                } else {
-                                                    render_docs_with_links(
-                                                        docs_str,
-                                                        &field_item.links,
-                                                        data,
-                                                        link_resolver,
-                                                    )
-                                                    .replace("\n", "<br>")
-                                                };
-                                                output.push_str(&format!(
-                                                    "| `{}` | `{}` | {} |\n",
-                                                    field_name,
-                                                    format_type(field_type, data),
-                                                    rendered_docs
-                                                ));
-                                            }
-                                        }
-                                    }
-                                }
-                                if *has_stripped_fields {
-                                    output.push_str("| *private fields* | ... | *Some fields have been omitted* |\n");
-                                }
-                                output.push('\n');
-                            }
-                        }
-                        VariantKind::Plain => {}
-                    }
+                    // Fields table removed from here.
+
                     if let Some(discriminant) = &variant_details.discriminant {
                         output
                             .push_str(&format!("Discriminant Value: `{}`\n\n", discriminant.value));
@@ -541,35 +377,8 @@ pub fn process_union_details<F>(
     F: Fn(&Id) -> String + Copy,
 {
     let heading_level = std::cmp::min(level, 6);
-    output.push_str(&format!("{} Fields\n\n", "#".repeat(heading_level)));
-    output.push_str("| Name | Type | Documentation |\n");
-    output.push_str("|------|------|---------------|\n");
-
-    for field_id in &union_.fields {
-        if let Some(field_item) = data.index.get(field_id) {
-            if let Some(field_name) = &field_item.name {
-                if let ItemEnum::StructField(field_type) = &field_item.inner {
-                    let docs_str = field_item.docs.as_deref().unwrap_or("");
-                    let rendered_docs = if docs_str.is_empty() {
-                        "".to_string()
-                    } else {
-                        render_docs_with_links(docs_str, &field_item.links, data, link_resolver)
-                            .replace("\n", "<br>")
-                    };
-                    output.push_str(&format!(
-                        "| `{}` | `{}` | {} |\n",
-                        field_name,
-                        format_type(field_type, data),
-                        rendered_docs
-                    ));
-                }
-            }
-        }
-    }
-    if union_.has_stripped_fields {
-        output.push_str("| *private fields* | ... | *Some fields have been omitted* |\n");
-    }
-    output.push('\n');
+    
+    // Fields sub-section removed.
 
     if !union_.impls.is_empty() {
         let mut implemented_trait_paths = Vec::new();
