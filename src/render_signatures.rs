@@ -839,10 +839,12 @@ pub fn format_generic_args(output: &mut String, args: &GenericArgs, data: &Parse
                 output.push_str(&constraint.name.to_string());
 
                 // Format constraint args if present
-                let mut args_str = String::new();
-                format_generic_args(&mut args_str, &constraint.args, data);
-                if !args_str.is_empty() && args_str != "<>" {
-                    output.push_str(&args_str);
+                if let Some(args) = &constraint.args {
+                    let mut args_str = String::new();
+                    format_generic_args(&mut args_str, args, data);
+                    if !args_str.is_empty() && args_str != "<>" {
+                        output.push_str(&args_str);
+                    }
                 }
 
                 match &constraint.binding {
