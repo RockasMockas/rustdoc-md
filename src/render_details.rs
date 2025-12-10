@@ -1,4 +1,4 @@
-use crate::render_core::{ResolvedItemInfo, render_docs_with_links};
+use crate::render_core::{RenderOptions, ResolvedItemInfo, render_docs_with_links, render_item_page};
 use crate::render_signatures::{format_generics, format_type};
 use crate::rustdoc_json_types::Id;
 use crate::rustdoc_json_types::*; // Ensure Id is in scope for Fn(&Id)
@@ -177,12 +177,13 @@ pub fn process_struct_details<F>(
         if !all_inherent_methods.is_empty() {
             output.push_str(&format!("{} Methods\n\n", "#".repeat(heading_level + 1)));
             for resolved_method_info in all_inherent_methods {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_method_info,
                     data,
                     heading_level + 2, // Methods under "Methods" H3, so individual methods are H4
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -194,12 +195,13 @@ pub fn process_struct_details<F>(
                 "#".repeat(heading_level + 1)
             ));
             for resolved_const_info in all_inherent_assoc_consts {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_const_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -211,12 +213,13 @@ pub fn process_struct_details<F>(
                 "#".repeat(heading_level + 1)
             ));
             for resolved_type_info in all_inherent_assoc_types {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_type_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -469,12 +472,13 @@ pub fn process_enum_details<F>(
         if !all_inherent_methods.is_empty() {
             output.push_str(&format!("{} Methods\n\n", "#".repeat(heading_level + 1)));
             for resolved_method_info in all_inherent_methods {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_method_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -485,12 +489,13 @@ pub fn process_enum_details<F>(
                 "#".repeat(heading_level + 1)
             ));
             for resolved_const_info in all_inherent_assoc_consts {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_const_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -501,12 +506,13 @@ pub fn process_enum_details<F>(
                 "#".repeat(heading_level + 1)
             ));
             for resolved_type_info in all_inherent_assoc_types {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_type_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -623,12 +629,13 @@ pub fn process_union_details<F>(
         if !all_inherent_methods.is_empty() {
             output.push_str(&format!("{} Methods\n\n", "#".repeat(heading_level + 1)));
             for resolved_method_info in all_inherent_methods {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_method_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -639,12 +646,13 @@ pub fn process_union_details<F>(
                 "#".repeat(heading_level + 1)
             ));
             for resolved_const_info in all_inherent_assoc_consts {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_const_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -655,12 +663,13 @@ pub fn process_union_details<F>(
                 "#".repeat(heading_level + 1)
             ));
             for resolved_type_info in all_inherent_assoc_types {
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_type_info,
                     data,
                     heading_level + 2,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -824,12 +833,13 @@ pub fn process_impl_details<F>(
                         effective_name: assoc_item_ref.name.clone(),
                         reexport_source_canonical_path: None,
                     };
-                    crate::render_core::render_item_page(
+                    render_item_page(
                         output,
                         &resolved_assoc_info,
                         data,
                         sub_heading_level + 1,
                         link_resolver,
+                        RenderOptions::default(),
                     );
                 }
             }
@@ -847,12 +857,13 @@ pub fn process_impl_details<F>(
                         effective_name: assoc_item_ref.name.clone(),
                         reexport_source_canonical_path: None,
                     };
-                    crate::render_core::render_item_page(
+                    render_item_page(
                         output,
                         &resolved_assoc_info,
                         data,
                         sub_heading_level + 1,
                         link_resolver,
+                        RenderOptions::default(),
                     );
                 }
             }
@@ -867,12 +878,13 @@ pub fn process_impl_details<F>(
                         effective_name: assoc_item_ref.name.clone(),
                         reexport_source_canonical_path: None,
                     };
-                    crate::render_core::render_item_page(
+                    render_item_page(
                         output,
                         &resolved_assoc_info,
                         data,
                         sub_heading_level + 1,
                         link_resolver,
+                        RenderOptions::default(),
                     );
                 }
             }
@@ -940,12 +952,13 @@ fn render_associated_item_group<F>(
                     effective_name: item_ref.name.clone(),
                     reexport_source_canonical_path: None,
                 };
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_info,
                     data,
                     sub_heading_level + 1,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -963,12 +976,13 @@ fn render_associated_item_group<F>(
                     effective_name: item_ref.name.clone(),
                     reexport_source_canonical_path: None,
                 };
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_info,
                     data,
                     sub_heading_level + 1,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }
@@ -986,12 +1000,13 @@ fn render_associated_item_group<F>(
                     effective_name: item_ref.name.clone(),
                     reexport_source_canonical_path: None,
                 };
-                crate::render_core::render_item_page(
+                render_item_page(
                     output,
                     &resolved_info,
                     data,
                     sub_heading_level + 1,
                     link_resolver,
+                    RenderOptions::default(),
                 );
             }
         }

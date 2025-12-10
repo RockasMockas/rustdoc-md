@@ -10,6 +10,21 @@ pub struct ResolvedItemInfo<'a> {
     pub reexport_source_canonical_path: Option<String>, // Canonical path of the original item, if re-exported
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct RenderOptions {
+    pub omit_anchor: bool,
+    pub use_absolute_path_in_title: bool,
+}
+
+impl Default for RenderOptions {
+    fn default() -> Self {
+        Self {
+            omit_anchor: false,
+            use_absolute_path_in_title: false,
+        }
+    }
+}
+
 pub fn get_item_kind_string(item_enum: &ItemEnum) -> &'static str {
     match item_enum {
         ItemEnum::Module(_) => "Module",
@@ -160,7 +175,7 @@ pub fn render_item_list<F>(
                     let link = link_resolver(&resolved_info.original_item.id);
                     // Just output the link, do not repeat the Item Kind (e.g. "Struct: ...")
                     output.push_str(&format!("- {}", link));
-                    
+
                     if let Some(docs) = &resolved_info.original_item.docs {
                         // Render one-line summary
                         let first_line = docs.lines().next().unwrap_or("").trim();
@@ -230,6 +245,7 @@ pub fn render_item_page<F>(
     data: &ParsedCrateDoc,
     level: usize,
     link_resolver: F,
+    options: RenderOptions,
 ) where
     F: Fn(&Id) -> String + Copy,
 {
@@ -240,18 +256,13 @@ pub fn render_item_page<F>(
     let display_name_opt = resolved_info.effective_name.as_ref().or(item.name.as_ref());
     let item_kind_str = get_item_kind_string(&item.inner);
 
-    // For single file mode, add an anchor
-    // The link_resolver for single file mode will generate "#anchor_name"
-    // The link_resolver for multi file mode will generate "path/to/file.md"
-    // So, the anchor is only strictly needed for single file.
-    // We can determine this by checking if the link_resolver output starts with #
-    // However, the plan suggests adding it always and relying on the link_resolver.
-    // Let's follow the plan's specific instruction for adding the anchor.
-    if let Some(summary) = data.paths.get(&item.id) {
-        output.push_str(&format!(
-            "<a name=\"{}\"></a>\n",
-            crate::path_utils::get_item_anchor(item, summary)
-        ));
+    if !options.omit_anchor {
+        if let Some(summary) = data.paths.get(&item.id) {
+            output.push_str(&format!(
+                "<a name=\"{}\"></a>\n",
+                crate::path_utils::get_item_anchor(item, summary)
+            ));
+        }
     }
 
     // Standardized Heading Logic
@@ -263,18 +274,25 @@ pub fn render_item_page<F>(
             ));
         } else {
             // Treat all items equally for headings
+            let name_to_show = if options.use_absolute_path_in_title {
+                if let Some(summary) = data.paths.get(&item.id) {
+                    summary.path.join("::")
+                } else {
+                    display_name.to_string()
+                }
+            } else {
+                display_name.to_string()
+            };
+
             output.push_str(&format!(
                 "{} {} `{}`\n\n",
-                heading_prefix, item_kind_str, display_name
+                heading_prefix, item_kind_str, name_to_show
             ));
         }
     } else {
         // Handle nameless items like impls
         match &item.inner {
             ItemEnum::Impl(impl_details) => {
-                // The special handling for blanket_impl.is_some() has been removed from here.
-                // It's now handled by the calling functions in render_details.rs to consolidate them.
-
                 if let Some(trait_) = &impl_details.trait_ {
                     output.push_str(&format!(
                         "{} Implementation of `{}` for `{}`\n\n",
@@ -412,7 +430,7 @@ where
         // The regex `\[`([^`]+)`\]` is a good first approximation for simple links.
 
         // For links like `[`MyType`]` or `[`my_function()`]`, the link text inside the backticks
-        // is usually what's in the `links` map.
+        // is usually the key in the `links` map.
         if let Some(target_id) = links.get(link_text) {
             link_resolver(target_id)
         } else {
@@ -454,7 +472,15 @@ pub fn render_module_items_recursively(
     };
 
     // Render the current module's page content (title, docs, item list).
-    render_item_page(output, &module_info, krate, level, link_resolver);
+    // Default options for single-file mode: show anchors, normal titles
+    render_item_page(
+        output,
+        &module_info,
+        krate,
+        level,
+        link_resolver,
+        RenderOptions::default(),
+    );
 
     // Now, recursively render the full content of any public submodules.
     if let ItemEnum::Module(module_details) = &module_item.inner {

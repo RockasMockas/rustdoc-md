@@ -1,5 +1,5 @@
 use crate::path_utils::get_item_fs_path; // get_item_file_name is used by get_item_fs_path
-use crate::render_core::{ResolvedItemInfo, render_item_page};
+use crate::render_core::{RenderOptions, ResolvedItemInfo, render_item_page};
 use crate::rustdoc_json_types::*;
 use std::collections::HashMap;
 use std::fs;
@@ -99,7 +99,17 @@ impl<'a> Generator<'a> {
             };
 
             // Top-level items in multi-file mode start at heading level 1
-            render_item_page(&mut content, &item_info, self.krate, 1, link_resolver);
+            render_item_page(
+                &mut content,
+                &item_info,
+                self.krate,
+                1,
+                link_resolver,
+                RenderOptions {
+                    omit_anchor: true,
+                    use_absolute_path_in_title: true,
+                },
+            );
             fs::write(item_file_path, content)?;
         }
 
