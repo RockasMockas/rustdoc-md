@@ -314,29 +314,6 @@ pub fn render_item_page<F>(
         }
     }
 
-    if !item.attrs.is_empty() {
-        output.push_str("**Attributes:**\n\n");
-        for attr in &item.attrs {
-            let attr_str = match attr {
-                Attribute::Plain(s) => s.clone(),
-                Attribute::Structured(map) => {
-                    // Try to extract "other" if present, otherwise dump the map
-                    if let Some(val) = map.get("other") {
-                        if let Some(s) = val.as_str() {
-                            s.to_string()
-                        } else {
-                            val.to_string()
-                        }
-                    } else {
-                        format!("{:?}", map)
-                    }
-                }
-            };
-            output.push_str(&format!("- `{}`\n", attr_str));
-        }
-        output.push('\n');
-    }
-
     if let Some(deprecation) = &item.deprecation {
         output.push_str("**⚠️ Deprecated");
         if let Some(since) = &deprecation.since {
