@@ -158,8 +158,9 @@ pub fn render_item_list<F>(
                 if let Some(_name) = &resolved_info.effective_name {
                     // Changed name to _name
                     let link = link_resolver(&resolved_info.original_item.id);
-                    let item_kind_str = get_item_kind_string(&resolved_info.original_item.inner);
-                    output.push_str(&format!("- **{}**: {}", item_kind_str, link));
+                    // Just output the link, do not repeat the Item Kind (e.g. "Struct: ...")
+                    output.push_str(&format!("- {}", link));
+                    
                     if let Some(docs) = &resolved_info.original_item.docs {
                         // Render one-line summary
                         let first_line = docs.lines().next().unwrap_or("").trim();
