@@ -1,6 +1,6 @@
 [package]
 name = "rustdoc-md"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Convert Rust documentation JSON into clean, organized Markdown files"
 readme = "README.md"

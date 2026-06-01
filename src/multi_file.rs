@@ -117,17 +117,26 @@ impl<'a> Generator<'a> {
     }
 
     fn resolve_link(&self, target_id: &Id, from_file_path: &Path) -> String {
-        let target_item_file_path = self
-            .fs_paths
-            .get(target_id)
-            .expect(&format!("FS path not found for target ID {:?}", target_id));
+        let target_item_file_path = match self.fs_paths.get(target_id) {
+            Some(p) => p.clone(),
+            None => {
+                // Target ID not in fs_paths — it may be an item with no path summary
+                // Try to get info from index if available
+                if let Some(summary) = self.krate.paths.get(target_id) {
+                    let default_name_owned = "unknown".to_string();
+                    let target_name = summary.path.last().unwrap_or(&default_name_owned);
+                    return format!("[`{}`](#)", target_name);
+                }
+                return "[unknown](#)".to_string();
+            }
+        };
 
         let from_dir = from_file_path
             .parent()
             .expect("Current item's file path should have a parent directory");
 
-        let relative_path = pathdiff::diff_paths(target_item_file_path, from_dir)
-            .unwrap_or_else(|| target_item_file_path.to_path_buf()); // Fallback to absolute
+        let relative_path = pathdiff::diff_paths(&target_item_file_path, from_dir)
+            .unwrap_or_else(|| target_item_file_path.clone()); // Fallback to absolute
 
         let target_summary = self.krate.paths.get(target_id).unwrap();
         let default_name_owned = "unknown".to_string();
