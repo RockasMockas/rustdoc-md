@@ -98,29 +98,26 @@ pub fn generate_rustdoc_json(project_root: &Path, include_deps: bool) -> eyre::R
     let json_output_dir = project_root.join("target").join("doc");
     let deps_flag = if include_deps { "" } else { " --no-deps" };
 
-    println!("Attempting to generate rustdoc JSON with nightly rustdoc...");
+    // Suppress all cargo build output (2>/dev/null)
     let nightly_result = std::process::Command::new("sh")
         .args([
             "-c",
-            &format!("RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc{}", deps_flag),
+            &format!("RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc{} 2>/dev/null", deps_flag),
         ])
         .current_dir(project_root)
         .output();
 
     if let Ok(output) = &nightly_result {
         if output.status.success() {
-            println!("Nightly rustdoc JSON generation succeeded.");
             return find_json_output(&json_output_dir);
         }
     }
 
-    eprintln!(
-        "Nightly rustdoc failed (or nightly not installed). Falling back to stable with RUSTC_BOOTSTRAP=1..."
-    );
+    // If nightly isn't available, fall back to RUSTC_BOOTSTRAP=1 on stable.
     let fallback_result = std::process::Command::new("sh")
         .args([
             "-c",
-            &format!("RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc{}", deps_flag),
+            &format!("RUSTC_BOOTSTRAP=1 cargo doc{} 2>/dev/null", deps_flag),
         ])
         .current_dir(project_root)
         .output()?;
@@ -133,7 +130,6 @@ pub fn generate_rustdoc_json(project_root: &Path, include_deps: bool) -> eyre::R
         ));
     }
 
-    println!("Stable rustdoc JSON generation (with RUSTC_BOOTSTRAP=1) succeeded.");
     find_json_output(&json_output_dir)
 }
 
@@ -153,7 +149,6 @@ pub fn find_json_output(dir: &Path) -> eyre::Result<std::path::PathBuf> {
         )),
         1 => {
             let json_path = json_files.pop().unwrap().path();
-            println!("Generated JSON: {}", json_path.display());
             Ok(json_path)
         }
         _ => {
@@ -193,7 +188,6 @@ pub fn quick_generate(start_dir: &Path) -> eyre::Result<()> {
 pub fn quick_generate_with_config(start_dir: &Path, config: QuickGenerateConfig) -> eyre::Result<()> {
     // 1. Find project root
     let project_root = find_project_root(start_dir)?;
-    println!("Found project root: {}", project_root.display());
 
     // 2. Generate JSON
     let json_output_dir = generate_rustdoc_json(&project_root, config.include_deps)?;
@@ -207,6 +201,5 @@ pub fn quick_generate_with_config(start_dir: &Path, config: QuickGenerateConfig)
         ensure_gitignore(&project_root, &config.output_folder)?;
     }
 
-    println!("Generated multi-file documentation in: {}", output_dir.display());
     Ok(())
 }

@@ -47,11 +47,7 @@ impl<'a> Generator<'a> {
             let item = match self.krate.index.get(id_from_paths) {
                 Some(i) => i,
                 None => {
-                    eprintln!(
-                        "Warning: Local item ID {:?} (path: {:?}) has a path summary but no full item details in index. Skipping page generation.",
-                        id_from_paths,
-                        summary.path.join("::")
-                    );
+                    // Silently skip local items missing full details
                     continue;
                 }
             };

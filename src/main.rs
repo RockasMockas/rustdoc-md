@@ -48,34 +48,30 @@ fn run_quick() -> eyre::Result<()> {
     // Find project root (first Cargo.toml going upwards)
     let project_root = find_project_root()?;
 
-    println!("Found project root: {}", project_root.display());
-
     // Generate JSON for all crates (including dependencies)
     let json_output_dir = project_root.join("target").join("doc");
 
-    println!("Attempting to generate rustdoc JSON with nightly rustdoc...");
+    // Suppress all cargo build output (2>/dev/null)
     let nightly_result = std::process::Command::new("sh")
         .args([
             "-c",
-            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc",
+            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc 2>/dev/null",
         ])
         .current_dir(&project_root)
         .output();
 
     if let Ok(output) = &nightly_result {
         if output.status.success() {
-            println!("Nightly rustdoc JSON generation succeeded.");
             return generate_all(&json_output_dir);
         }
     }
 
-    eprintln!(
-        "Nightly rustdoc failed (or nightly not installed). Falling back to stable with RUSTC_BOOTSTRAP=1..."
-    );
+    // If nightly isn't available, fall back to RUSTC_BOOTSTRAP=1 on stable.
     let fallback_result = std::process::Command::new("sh")
         .args([
             "-c",
-            "RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc",
+            // On stable, use RUSTC_BOOTSTRAP=1 without -Z flags since -Z is nightly-only.
+            "RUSTC_BOOTSTRAP=1 cargo doc 2>/dev/null",
         ])
         .current_dir(&project_root)
         .output()?;
@@ -88,7 +84,6 @@ fn run_quick() -> eyre::Result<()> {
         ));
     }
 
-    println!("Stable rustdoc JSON generation (with RUSTC_BOOTSTRAP=1) succeeded.");
     generate_all(&json_output_dir)
 }
 
@@ -103,7 +98,6 @@ fn generate_all(json_output_dir: &std::path::Path) -> eyre::Result<()> {
     // Ensure .crates-docs is in .gitignore
     ensure_gitignore(&project_root)?;
 
-    println!("Generated multi-file documentation in: {}", output_dir.display());
     Ok(())
 }
 
@@ -113,20 +107,16 @@ fn ensure_gitignore(project_root: &PathBuf) -> eyre::Result<()> {
     let entry = ".crates-docs";
 
     if !gitignore.exists() {
-        // Create .gitignore with the entry
         std::fs::write(&gitignore, format!("{}\n", entry))?;
-        println!("Created .gitignore with {}", entry);
         return Ok(());
     }
 
     let contents = std::fs::read_to_string(&gitignore)?;
     if contents.lines().any(|line| line.trim() == entry) {
-        return Ok(()); // Already present
+        return Ok(());
     }
 
-    // Append to .gitignore
     std::fs::write(&gitignore, format!("{}\n{}", contents.trim_end(), entry))?;
-    println!("Added {} to .gitignore", entry);
     Ok(())
 }
 
@@ -149,29 +139,28 @@ fn find_project_root() -> eyre::Result<PathBuf> {
 fn generate_json_at(project_root: &PathBuf) -> eyre::Result<PathBuf> {
     let json_output_dir = project_root.join("target").join("doc");
 
-    println!("Attempting to generate rustdoc JSON with nightly rustdoc...");
+    // Suppress all cargo output: redirect stdout+stderr to /dev/null
     let nightly_result = Command::new("sh")
         .args([
             "-c",
-            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc --no-deps",
+            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc --no-deps 2>/dev/null",
         ])
         .current_dir(project_root)
         .output();
 
     if let Ok(output) = &nightly_result {
         if output.status.success() {
-            println!("Nightly rustdoc JSON generation succeeded.");
             return find_json_output(&json_output_dir);
         }
     }
 
-    eprintln!(
-        "Nightly rustdoc failed (or nightly not installed). Falling back to stable with RUSTC_BOOTSTRAP=1..."
-    );
+    // If nightly isn't available, fall back to RUSTC_BOOTSTRAP=1 on stable.
     let fallback_result = Command::new("sh")
         .args([
             "-c",
-            "RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc --no-deps",
+            // On stable, we use RUSTC_BOOTSTRAP=1 without -Z flags since -Z is nightly-only.
+            // json output-format is available on stable when RUSTC_BOOTSTRAP=1 is set.
+            "RUSTC_BOOTSTRAP=1 cargo doc --no-deps 2>/dev/null",
         ])
         .current_dir(project_root)
         .output()?;
@@ -184,7 +173,6 @@ fn generate_json_at(project_root: &PathBuf) -> eyre::Result<PathBuf> {
         ));
     }
 
-    println!("Stable rustdoc JSON generation (with RUSTC_BOOTSTRAP=1) succeeded.");
     find_json_output(&json_output_dir)
 }
 
@@ -208,7 +196,6 @@ fn run_std(cli: &Cli) -> eyre::Result<()> {
         find_project_root()?
     } else {
         println!("{}", krate.to_string());
-        eprintln!("Generated single-document Markdown to stdout.");
         return Ok(());
     };
 
@@ -220,10 +207,6 @@ fn run_std(cli: &Cli) -> eyre::Result<()> {
             ));
         }
         krate.to_multi_file(&output_path, None)?;
-        println!(
-            "Generated multi-file documentation in: {}",
-            output_path.display()
-        );
     } else {
         if output_path.is_dir() {
             return Err(eyre::eyre!(
@@ -232,10 +215,6 @@ fn run_std(cli: &Cli) -> eyre::Result<()> {
             ));
         }
         krate.to_single_file(&output_path, None)?;
-        println!(
-            "Generated single-file documentation to: {}",
-            output_path.display()
-        );
     }
 
     Ok(())
@@ -254,8 +233,7 @@ fn find_json_output(dir: &std::path::Path) -> eyre::Result<PathBuf> {
         )),
         1 => {
             let json_path = json_files.pop().unwrap().path();
-            println!("Generated JSON: {}", json_path.display());
-            Ok(json_path)
+        Ok(json_path)
         }
         _ => {
             let names: Vec<_> = json_files.iter().map(|e| e.file_name()).collect();

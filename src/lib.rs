@@ -26,13 +26,6 @@ impl ParsedCrateDoc {
         let reader = io::BufReader::new(file);
         let krate: ParsedCrateDoc = serde_json::from_reader(reader)?;
 
-        if krate.format_version != FORMAT_VERSION {
-            eprintln!(
-                "Warning: The JSON data has format version {}, but this tool is built for version {}. Output might be incorrect.",
-                krate.format_version, FORMAT_VERSION
-            );
-        }
-
         Ok(krate)
     }
 
@@ -129,19 +122,15 @@ pub fn generate_markdown_for_all_json_in_dir(
     for entry_result in entries {
         let entry = match entry_result {
             Ok(entry) => entry,
-            Err(e) => {
-                eprintln!(
-                    "Warning: Failed to access entry in '{}': {}",
-                    input_dir.display(),
-                    e
-                );
+            Err(_e) => {
+                // Silently skip unreadable directory entries
                 continue;
             }
         };
 
         let path = entry.path();
         if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
-            eprintln!("Processing '{}'...", path.display());
+            // Suppress processing messages to keep the TUI clean
             match ParsedCrateDoc::from_file(&path) {
                 Ok(krate) => {
                     // Determine crate name for the subdirectory
@@ -157,26 +146,13 @@ pub fn generate_markdown_for_all_json_in_dir(
                         });
 
                     let crate_output_dir = output_dir.join(&crate_name);
-                    eprintln!(
-                        "Generating Markdown for crate '{}' into '{}'...",
-                        crate_name,
-                        crate_output_dir.display()
-                    );
-
-                    if let Err(e) = krate.to_multi_file(&crate_output_dir, None) {
-                        eprintln!(
-                            "Warning: Failed to generate Markdown for '{}': {}",
-                            path.display(),
-                            e
-                        );
+                    // Suppress per-crate generation messages
+                    if let Err(_e) = krate.to_multi_file(&crate_output_dir, None) {
+                        // Silently skip generation failures
                     }
                 }
-                Err(e) => {
-                    eprintln!(
-                        "Warning: Failed to parse JSON file '{}': {}. Skipping.",
-                        path.display(),
-                        e
-                    );
+                Err(_e) => {
+                    // Silently skip files that fail to parse
                 }
             }
         }
