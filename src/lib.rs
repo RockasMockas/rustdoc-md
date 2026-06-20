@@ -1,9 +1,20 @@
 pub mod multi_file;
 pub mod path_utils;
+pub mod quick_generate;
 pub mod render_core;
 pub mod render_details;
 pub mod render_signatures;
 pub mod rustdoc_json_types;
+
+// Re-export quick-generate API at the crate root for convenient use.
+pub use quick_generate::ensure_gitignore;
+pub use quick_generate::find_json_output;
+pub use quick_generate::find_project_root;
+pub use quick_generate::generate_rustdoc_json;
+pub use quick_generate::quick_generate;
+pub use quick_generate::quick_generate_with_config;
+pub use quick_generate::QuickGenerateConfig;
+pub use quick_generate::QUICK_OUTPUT_FOLDER;
 
 use rustdoc_json_types::*;
 use std::{fs, io, path::Path};
