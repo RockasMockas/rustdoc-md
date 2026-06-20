@@ -51,11 +51,11 @@ fn run_quick() -> eyre::Result<()> {
     // Generate JSON for all crates (including dependencies)
     let json_output_dir = project_root.join("target").join("doc");
 
-    // Suppress all cargo build output (2>/dev/null)
+    // Suppress all cargo build output (stdout+stderr -> /dev/null)
     let nightly_result = std::process::Command::new("sh")
         .args([
             "-c",
-            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc 2>/dev/null",
+            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc 2>&1 >/dev/null",
         ])
         .current_dir(&project_root)
         .output();
@@ -71,7 +71,7 @@ fn run_quick() -> eyre::Result<()> {
         .args([
             "-c",
             // On stable, use RUSTC_BOOTSTRAP=1 without -Z flags since -Z is nightly-only.
-            "RUSTC_BOOTSTRAP=1 cargo doc 2>/dev/null",
+            "RUSTC_BOOTSTRAP=1 cargo doc 2>&1 >/dev/null",
         ])
         .current_dir(&project_root)
         .output()?;
@@ -143,7 +143,7 @@ fn generate_json_at(project_root: &PathBuf) -> eyre::Result<PathBuf> {
     let nightly_result = Command::new("sh")
         .args([
             "-c",
-            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc --no-deps 2>/dev/null",
+            "RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc --no-deps 2>&1 >/dev/null",
         ])
         .current_dir(project_root)
         .output();
@@ -160,7 +160,7 @@ fn generate_json_at(project_root: &PathBuf) -> eyre::Result<PathBuf> {
             "-c",
             // On stable, we use RUSTC_BOOTSTRAP=1 without -Z flags since -Z is nightly-only.
             // json output-format is available on stable when RUSTC_BOOTSTRAP=1 is set.
-            "RUSTC_BOOTSTRAP=1 cargo doc --no-deps 2>/dev/null",
+            "RUSTC_BOOTSTRAP=1 cargo doc --no-deps 2>&1 >/dev/null",
         ])
         .current_dir(project_root)
         .output()?;

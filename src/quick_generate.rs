@@ -98,11 +98,11 @@ pub fn generate_rustdoc_json(project_root: &Path, include_deps: bool) -> eyre::R
     let json_output_dir = project_root.join("target").join("doc");
     let deps_flag = if include_deps { "" } else { " --no-deps" };
 
-    // Suppress all cargo build output (2>/dev/null)
+    // Suppress all cargo build output (stdout+stderr -> /dev/null)
     let nightly_result = std::process::Command::new("sh")
         .args([
             "-c",
-            &format!("RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc{} 2>/dev/null", deps_flag),
+            &format!("RUSTDOCFLAGS=\"-Z unstable-options --output-format json\" cargo doc{} 2>&1 >/dev/null", deps_flag),
         ])
         .current_dir(project_root)
         .output();
@@ -117,7 +117,7 @@ pub fn generate_rustdoc_json(project_root: &Path, include_deps: bool) -> eyre::R
     let fallback_result = std::process::Command::new("sh")
         .args([
             "-c",
-            &format!("RUSTC_BOOTSTRAP=1 cargo doc{} 2>/dev/null", deps_flag),
+            &format!("RUSTC_BOOTSTRAP=1 cargo doc{} 2>&1 >/dev/null", deps_flag),
         ])
         .current_dir(project_root)
         .output()?;
